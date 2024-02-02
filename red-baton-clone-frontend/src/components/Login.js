@@ -43,7 +43,7 @@ const Login = () => {
       }
       if (res.status === 200) {
         store(res.data);
-        navigate("/home");
+        navigate("/");
       }
     } catch (error) {
       console.log(error);

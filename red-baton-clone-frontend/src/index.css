@@ -39,3 +39,6 @@ button:hover  {
 width: 25% !important;
   }
 }
+p a:visited {
+  color: #8e96a8; /* Color for visited links */
+}

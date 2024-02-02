@@ -8,30 +8,25 @@ const Home = () => {
 
   useEffect(() => {
     getNotes();
-    // const arr = crawlHackerNews();
-    // console.log(arr);
   }, []);
 
-  const [data, setData] = useState({
-    title: "",
-    desc: "",
-  });
-  const [error, setError] = useState("");
   const [notes, setNotes] = useState([]);
-  const noteRef = useRef(null);
+  const [count, setCount] = useState(0);
+  function splitArrayIntoChunks(array, chunkSize) {
+    const result = Array.from(
+      { length: Math.ceil(array.length / chunkSize) },
+      (v, i) => array.slice(i * chunkSize, i * chunkSize + chunkSize)
+    );
 
-  const handleChange = (e) => {
-    setError("");
-    setData({ ...data, [e.target.name]: e.target.value });
-  };
+    return result;
+  }
   const getNotes = async () => {
     try {
-      const res = await axios.get(
-        `http://localhost:5000/api/notes/${user._id}`
-      );
-
-      if (res.data) {
-        setNotes(res.data);
+      const res = await axios.get(`http://localhost:5000/api/news/`);
+      if (res?.data) {
+        const chunkedArrayOfObjects = splitArrayIntoChunks(res.data, 30);
+        setNotes(chunkedArrayOfObjects);
+        // setNotes(res.data);
       } else {
         handleLogout();
       }
@@ -39,45 +34,11 @@ const Home = () => {
       handleLogout();
     }
   };
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (data.title === "") {
-      setError("Title can't be empty");
-    } else if (data.desc === "") {
-      setError("Desc can't be empty");
-    } else {
-      try {
-        const res = await axios.post("http://localhost:5000/api/notes", {
-          ...data,
-          id: user._id,
-        });
-        if (res.data) {
-          getNotes();
-        }
-      } catch (error) {
-        setError(error.message);
-      } finally {
-        setData({
-          title: "",
-          desc: "",
-        });
-      }
-    }
-  };
   const handleLogout = () => {
     localStorage.removeItem("user");
     navigate("/");
   };
-  const handleDelete = async (e) => {
-    try {
-      const res = await axios.delete(
-        `http://localhost:5000/api/notes/${e._id}`
-      );
-      if (res.data) {
-        getNotes();
-      }
-    } catch (error) {}
-  };
+  console.log(notes);
   return (
     <div className="mx-10">
       {/* header */}
@@ -88,20 +49,78 @@ const Home = () => {
         <div>
           <button
             className="border rounded font-bold my-2 mt-4 p-2 color-blue text-white"
-            onClick={handleLogout}
+            onClick={() => {
+              if (user) {
+                handleLogout();
+              } else {
+                navigate("/login");
+              }
+            }}
           >
-            Logout
+            {user ? "Logout" : "Login"}
           </button>
         </div>
       </div>
       <div className="bg-content">
-        <div className="py-2 font-semibold px-2">
-          <p className="text-title">1 . Ask HN: Looking for a Cofounder?</p>
-          <p className="mt-1 ps-4 font-thin text-sub ">
-            {" "}
-            1 point by karanveer 1 minute ago | hide | past | discuss
-          </p>
-        </div>
+        {notes &&
+          notes[count]?.length > 0 &&
+          notes[count].map((e, i) => {
+            const currentTime = new Date();
+            const givenTimeDate = new Date(e.updatedAt);
+
+            // Calculate the time difference in milliseconds
+            const timeDifferenceMs = currentTime - givenTimeDate;
+            // Convert milliseconds to hours
+            let timeDifferenceHours = timeDifferenceMs / (1000 * 60 * 60);
+            if (timeDifferenceHours > 24) {
+              timeDifferenceHours = timeDifferenceHours / 24;
+              timeDifferenceHours = `${Math.round(
+                timeDifferenceHours
+              )} days ago`;
+            } else {
+              timeDifferenceHours = `${Math.round(
+                timeDifferenceHours
+              )} hours ago`;
+            }
+            return (
+              <div className="py-2 font-semibold px-2">
+                <p className="text-title">
+                  <a href={e.hnUrl}>
+                    {" "}
+                    {30 * count + i + 1} . {e.title}{" "}
+                  </a>
+                  (<span className="font-thin ">{e.url}</span>)
+                </p>
+                <p className="mt-1 ps-4 font-thin text-sub ">
+                  {" "}
+                  {e.upVotes} points {timeDifferenceHours} | {e.comments}{" "}
+                  comments
+                </p>
+              </div>
+            );
+          })}
+      </div>
+      <div className="flex justify-center">
+        {count > 0 && (
+          <button
+            className="border rounded font-bold my-2 mt-4 p-2 px-10 color-blue text-white"
+            onClick={() => {
+              setCount((prev) => prev - 1);
+            }}
+          >
+            Prev{" "}
+          </button>
+        )}
+        {count < notes.length && (
+          <button
+            className="border rounded font-bold my-2 mt-4 p-2 px-10 color-blue text-white"
+            onClick={() => {
+              setCount((prev) => prev + 1);
+            }}
+          >
+            More{" "}
+          </button>
+        )}
       </div>
     </div>
   );
