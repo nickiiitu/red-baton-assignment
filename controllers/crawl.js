@@ -45,7 +45,7 @@ const extractNewsItems = async (pageUrl) => {
       const exists = await news.findOne({ title });
       if (exists) {
         const updatedUser = await news.findOneAndUpdate(
-          { title, hnUrl: hackerNewsURL, url },
+          { title },
           { $set: data },
           { new: true } // Return the updated document
         );
